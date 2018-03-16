@@ -1,0 +1,16 @@
+{
+  "name": "vdsencore/encore",
+  "version": "2.0",
+  "description": "Gryadka is a minimalistic Paxos-based master-master replicated consistent key/value layer on top of multiple instances of Redis",
+  "main": "dist/encore.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/vdsencore/encore.git"
+  },
+  "keywords": [
+    "vdsencore"
+  ],
+  "author": "David K",
+  "license": "MIT",
+  "homepage": "https://github.com/vdsencore/encore"
+}
