@@ -1,8 +1,0 @@
-{
-    "name": "vdsencore/encore",
-    "version": "2.0",
-    "dist": {
-        "url": "https://github.com/vdsencore/encore/blob/master/dist/encore.js",
-        "type": "js"
-    }
-}
