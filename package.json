@@ -5,7 +5,7 @@
   "main": "dist/encore.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/vdsencore/encore.git"
+    "url": "git@github.com:vdsencore/encore.git"
   },
   "keywords": [
     "vdsencore"
