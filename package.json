@@ -5,6 +5,7 @@
   "description": "Vds Encore",
   "main": "dist/encore.js",
   "browser":"./dist/encore.js",
+  "jsdelivr":"./dist/encore.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/vdsencore/encore"
