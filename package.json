@@ -1,20 +1,22 @@
 {
-  "name": "vdsencore/encore",
-  "title": "encore",
-  "version": "2.0",
+  "name": "vdsencore",
+  "version": "2.0.0",
   "description": "Vds Encore",
-  "directory": "encore",
   "main": "dist/encore.js",
-  "browser":"./dist/encore.js",
-  "jsdelivr":"./dist/encore.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "repository": {
     "type": "git",
-    "url": "https://github.com/vdsencore/encore.git"
+    "url": "git+https://github.com/vdsencore/encore.git"
   },
   "keywords": [
     "vdsencore"
   ],
   "author": "David K",
   "license": "MIT",
-  "homepage": "https://github.com/vdsencore/encore"
+  "bugs": {
+    "url": "https://github.com/vdsencore/encore/issues"
+  },
+  "homepage": "https://github.com/vdsencore/encore#readme"
 }
