@@ -3,6 +3,7 @@
   "title": "encore",
   "version": "2.0",
   "description": "Vds Encore",
+  "directory": "encore",
   "main": "dist/encore.js",
   "browser":"./dist/encore.js",
   "jsdelivr":"./dist/encore.js",
