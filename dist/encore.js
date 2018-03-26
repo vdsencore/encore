@@ -20,41 +20,6 @@
     "use strict";
     /* Wrap code in an IIFE */
     var jQueryNC;
-    var _encoreLoadScript = function (url, callback) {
-        callback = callback || "";
-        var script = document.createElement('script');
-        script.type = "text/javascript";
-        script.async = true;
-        script.src = url;
-        var entry = document.getElementsByTagName('script')[0];
-        entry.parentNode.insertBefore(script, entry);
-        script.onload = script.onreadystatechange = function () {
-            var rdyState = script.readyState;
-            if (!rdyState || /complete|loaded/.test(script.readyState)) {
-                if (callback) {
-                    callback();
-                }
-                // detach the event handler to avoid memory leaks in IE (http://mng.bz/W8fx)
-                script.onload = null;
-                script.onreadystatechange = null;
-            }
-        };
-    }
-
-    /******** Load jQuery if not present *********/
-    if (window.jQuery === undefined || window.jQuery.fn.jquery !== '1.12.4') {
-        _encoreLoadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js", function () {
-            jQueryNC = window.jQuery.noConflict(true);
-            _initEncore();
-        });
-    } else {
-        // The jQuery version on the window is the one we want to use
-        jQueryNC = window.jQuery;
-        _initEncore();
-    }
-    var _initEncore = function () {
-        revenue._readyInterval = window.setInterval(revenue._encoreReady, 500);
-    }
     //revenue
     var revenue = {
         _revenueEndpoint: "http://getencore.com/api/js/revenue/",
@@ -65,7 +30,7 @@
         send: function () {
             if (!this._revenueid || Object.keys(this._params).length == 0)return;
             var pdata = jQueryNC.param(this._params);
-            if(EncoreCookie.hashString(pdata) == EncoreCookie.get("encoreRevenue"))return;
+            if(EncoreCookie.base64Encrypt(pdata) == EncoreCookie.get("encoreRevenue"))return;
             var url = this._revenueEndpoint + this._revenueid;
             var request = EncoreAjax.send({url: url, data: pdata});
             EncoreCookie.set("encoreRevenue",pdata);
@@ -165,10 +130,10 @@
             return request;
         }
     }
+
     var EncoreCookie = {
         set: function (name, value, options) {
             options = options || {};
-            options.hash = options.hash || true;
             options.path = options.path || '/';
             options.domain = options.domain || window.location.hostname.split('.').slice(-2).join('.');
             options.expires = options.expires || 1;
@@ -190,12 +155,10 @@
             var path = '; path=' + (options.path);
             var domain = options.domain ? '; domain=' + (options.domain) : '';
             var secure = options.secure ? '; secure' : '';
-            if(options.hash){
-                value = this.hashString(value);
-            }
-            document.cookie = [name, '=', encodeURIComponent(value), expires, path, domain, secure].join('');
+            document.cookie = [name, '=', this.base64Encrypt(value), expires, path, domain, secure].join('');
         },
-        get: function (name) {
+        get: function (name,parsed) {
+            parsed = parsed || false;
             var cookieValue = "";
             if (document.cookie && document.cookie != '') {
                 var allCookie = '' + document.cookie;
@@ -203,7 +166,11 @@
                 if (name === undefined || name === '' || index === -1) return '';
                 var ind1 = allCookie.indexOf(';', index);
                 if (ind1 == -1) ind1 = allCookie.length;
-                return decodeURIComponent(allCookie.substring(index + name.length + 1, ind1));
+                if(parsed) {
+                    return this.base64Decrypt(allCookie.substring(index + name.length + 1, ind1));
+                }else{
+                    return allCookie.substring(index + name.length + 1, ind1);
+                }
             }
             return cookieValue;
         },
@@ -212,22 +179,79 @@
                 this.set(name, null);
             }
         },
-        hashString: function (string) {
-            string = string || "";
-            if (Array.prototype.reduce) {
-                return string.split("").reduce(function (a, b) {
-                    a = ((a << 5) - a) + b.charCodeAt(0);
-                    return a & a
-                }, 0);
+        base64Encrypt: function (str) {
+            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            var encoded = [];
+            var c = 0;
+            while (c < str.length) {
+                var b0 = str.charCodeAt(c++);
+                var b1 = str.charCodeAt(c++);
+                var b2 = str.charCodeAt(c++);
+                var buf = (b0 << 16) + ((b1 || 0) << 8) + (b2 || 0);
+                var i0 = (buf & (63 << 18)) >> 18;
+                var i1 = (buf & (63 << 12)) >> 12;
+                var i2 = isNaN(b1) ? 64 : (buf & (63 << 6)) >> 6;
+                var i3 = isNaN(b2) ? 64 : (buf & 63);
+                encoded[encoded.length] = chars.charAt(i0);
+                encoded[encoded.length] = chars.charAt(i1);
+                encoded[encoded.length] = chars.charAt(i2);
+                encoded[encoded.length] = chars.charAt(i3)
             }
-            var hash = 0;
-            if (string.length === 0) return hash;
-            for (var i = 0; i < string.length; i++) {
-                var character = string.charCodeAt(i);
-                hash = ((hash << 5) - hash) + character;
-                hash = hash & hash; // Convert to 32bit integer
-            }
-            return hash;
+            return encoded.join('');
         },
+        base64Decrypt: function (str) {
+            var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+            var invalid = {strlen: (str.length % 4 != 0), chars: new RegExp('[^' + chars + ']').test(str), equals: (/=/.test(str) && (/=[^=]/.test(str) || /={3}/.test(str)))};
+            if (invalid.strlen || invalid.chars || invalid.equals)throw new Error('Invalid base64 data');
+            var decoded = [];
+            var c = 0;
+            while (c < str.length) {
+                var i0 = chars.indexOf(str.charAt(c++));
+                var i1 = chars.indexOf(str.charAt(c++));
+                var i2 = chars.indexOf(str.charAt(c++));
+                var i3 = chars.indexOf(str.charAt(c++));
+                var buf = (i0 << 18) + (i1 << 12) + ((i2 & 63) << 6) + (i3 & 63);
+                var b0 = (buf & (255 << 16)) >> 16;
+                var b1 = (i2 == 64) ? -1 : (buf & (255 << 8)) >> 8;
+                var b2 = (i3 == 64) ? -1 : (buf & 255);
+                decoded[decoded.length] = String.fromCharCode(b0);
+                if (b1 >= 0)decoded[decoded.length] = String.fromCharCode(b1);
+                if (b2 >= 0)decoded[decoded.length] = String.fromCharCode(b2)
+            }
+            return decoded.join('');
+        }
     };
+    var _encoreLoadScript = function (url, callback) {
+        callback = callback || "";
+        var script = document.createElement('script');
+        script.type = "text/javascript";
+        script.async = true;
+        script.src = url;
+        var entry = document.getElementsByTagName('script')[0];
+        entry.parentNode.insertBefore(script, entry);
+        script.onload = script.onreadystatechange = function () {
+            var rdyState = script.readyState;
+            if (!rdyState || /complete|loaded/.test(script.readyState)) {
+                if (callback) {
+                    callback();
+                }
+                // detach the event handler to avoid memory leaks in IE (http://mng.bz/W8fx)
+                script.onload = null;
+                script.onreadystatechange = null;
+            }
+        };
+    }
+    var _initEncore = function () {
+        revenue._readyInterval = window.setInterval(revenue._encoreReady, 500);
+    }
+    /******** Load jQuery if not present *********/
+    if (window.jQuery === undefined || parseInt(window.jQuery.fn.jquery.split('.').join('')) < 180) {
+        _encoreLoadScript("https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js", function () {
+            jQueryNC = window.jQuery.noConflict(true);
+            _initEncore();
+        });
+    } else {
+        jQueryNC = window.jQuery;
+        _initEncore();
+    }
 })(window, undefined);
